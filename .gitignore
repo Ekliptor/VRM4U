@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# Build output
+Intermediate/VRM4UMacBuild/
+
 # IDEs
 .idea/
 .vs/
