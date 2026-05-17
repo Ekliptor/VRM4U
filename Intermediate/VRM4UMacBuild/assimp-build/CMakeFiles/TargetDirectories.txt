@@ -1,0 +1,5 @@
+/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/assimp-build/CMakeFiles/edit_cache.dir
+/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/assimp-build/CMakeFiles/rebuild_cache.dir
+/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/assimp-build/code/CMakeFiles/assimp.dir
+/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/assimp-build/code/CMakeFiles/edit_cache.dir
+/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/assimp-build/code/CMakeFiles/rebuild_cache.dir

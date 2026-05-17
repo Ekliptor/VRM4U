@@ -1,0 +1,18 @@
+{
+	"SourceFiles": [
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Plugins/VRM4U/Source/VRM4U/VRM4U.Build.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Plugins/VRM4U/Source/VRM4UCapture/VRM4UCapture.Build.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Plugins/VRM4U/Source/VRM4UCaptureEditor/VRM4UCaptureEditor.Build.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Plugins/VRM4U/Source/VRM4UEditor/VRM4UEditor.Build.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Plugins/VRM4U/Source/VRM4UImporter/VRM4UImporter.Build.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Plugins/VRM4U/Source/VRM4ULoader/VRM4ULoader.Build.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Plugins/VRM4U/Source/VRM4UMisc/VRM4UMisc.Build.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Plugins/VRM4U/Source/VRM4URender/VRM4URender.Build.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Intermediate/Source/HostProject.Build.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Intermediate/Source/HostProject.Target.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Intermediate/Source/HostProjectClient.Target.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Intermediate/Source/HostProjectEditor.Target.cs",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/PackagedPlugin/HostProject/Intermediate/Source/HostProjectServer.Target.cs"
+	],
+	"EngineVersion": "5.7.4"
+}

@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/assimp-build/cmake_install.cmake",
+		"/Users/daniel/Documents/Coding/Games/VRM4U/Intermediate/VRM4UMacBuild/assimp-build/code/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
