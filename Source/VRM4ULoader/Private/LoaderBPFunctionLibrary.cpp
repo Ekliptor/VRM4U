@@ -29,6 +29,10 @@
 #include "RenderingThread.h"
 #include "Rendering/SkeletalMeshModel.h"
 #include "Rendering/SkeletalMeshLODModel.h"
+// Workaround for UE 5.7 crash in PostLoadRecoverConvertLODModelsToMeshDescription:
+// see EnsureMeshDescriptionPopulated below.
+#include "MeshDescription.h"
+#include "SkeletalMeshAttributes.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "PhysicsEngine/PhysicsConstraintTemplate.h"
 #include "Misc/FeedbackContext.h"
@@ -96,6 +100,33 @@
 namespace {
 	UPackage *s_vrm_package = nullptr;
 	FString baseFileName;
+
+	// Workaround for UE 5.7 crash in
+	// USkeletalMesh::PostLoadRecoverConvertLODModelsToMeshDescription:
+	// FSkeletalMeshLODModel::GetMeshDescription reads section vertices /
+	// IndexBuffer in a way that assumes FBX-style ranges, which VRM topology
+	// violates — every VRM import hits an Array OOB and the editor aborts.
+	// The recovery loop at SkeletalMesh.cpp:3675 skips any LOD that already
+	// has a mesh description, so populating an empty FMeshDescription per LOD
+	// short-circuits the buggy code. Must run BEFORE PostEditChange (which
+	// queues the async build worker that calls the recovery).
+	static void EnsureMeshDescriptionPopulated(USkeletalMesh* SkMesh)
+	{
+#if WITH_EDITOR
+		if (!SkMesh) return;
+		const int32 NumLOD = SkMesh->GetNumSourceModels();
+		for (int32 LODIndex = 0; LODIndex < NumLOD; ++LODIndex)
+		{
+			if (!SkMesh->IsValidLODIndex(LODIndex)) continue;
+			if (SkMesh->HasMeshDescription(LODIndex)) continue;
+			FMeshDescription Empty;
+			FSkeletalMeshAttributes Attrs(Empty);
+			Attrs.Register();
+			SkMesh->CreateMeshDescription(LODIndex, MoveTemp(Empty));
+			SkMesh->CommitMeshDescription(LODIndex);
+		}
+#endif
+	}
 }
 
 namespace {
@@ -1317,6 +1348,10 @@ bool ULoaderBPFunctionLibrary::CreateTailBone(USkeletalMesh *skeletalMesh, const
 		VRMGetSkeleton(skeletalMesh)->Modify();
 
 #if WITH_EDITOR
+		// Must precede PostEditChange — PostEditChange queues the async
+		// skinned-asset build, which races to crash if HasMeshDescription
+		// is false. See EnsureMeshDescriptionPopulated above for details.
+		EnsureMeshDescriptionPopulated(skeletalMesh);
 		skeletalMesh->PostEditChange();
 		VRMGetSkeleton(skeletalMesh)->PostEditChange();
 #endif

@@ -14,6 +14,9 @@
 #include "Rendering/SkeletalMeshLODRenderData.h"
 #include "Rendering/SkeletalMeshRenderData.h"
 #include "Animation/MorphTarget.h"
+// UE 5.7 crash workaround: see EnsureMeshDescriptionPopulated below.
+#include "MeshDescription.h"
+#include "SkeletalMeshAttributes.h"
 
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "PhysicsEngine/PhysicsConstraintTemplate.h"
@@ -28,6 +31,29 @@
 #include <assimp/vrm/vrmmeta.h>
 
 namespace {
+	// Workaround for UE 5.7 crash in
+	// USkeletalMesh::PostLoadRecoverConvertLODModelsToMeshDescription — see
+	// the matching helper in LoaderBPFunctionLibrary.cpp for the long story.
+	// Duplicated here (rather than shared via a header) because both are
+	// translation-unit-private and the helper is twelve lines.
+	static void EnsureMeshDescriptionPopulated(USkeletalMesh* SkMesh)
+	{
+#if WITH_EDITOR
+		if (!SkMesh) return;
+		const int32 NumLOD = SkMesh->GetNumSourceModels();
+		for (int32 LODIndex = 0; LODIndex < NumLOD; ++LODIndex)
+		{
+			if (!SkMesh->IsValidLODIndex(LODIndex)) continue;
+			if (SkMesh->HasMeshDescription(LODIndex)) continue;
+			FMeshDescription Empty;
+			FSkeletalMeshAttributes Attrs(Empty);
+			Attrs.Register();
+			SkMesh->CreateMeshDescription(LODIndex, MoveTemp(Empty));
+			SkMesh->CommitMeshDescription(LODIndex);
+		}
+#endif
+	}
+
 #if WITH_EDITOR
 	void LocalPopulateDeltas(UMorphTarget* Morph, const TArray<FMorphTargetDelta>& Deltas, const int32 LODIndex, const TArray<struct FSkelMeshSection>& Sections)
 	{
@@ -446,6 +472,10 @@ bool VRMConverter::ConvertMorphTarget(UVrmAssetListObject *vrmAssetList) {
 	}
 
 #if WITH_EDITOR
+	// Must precede PostEditChange — queues the async skinned-asset build
+	// whose PostLoad recovery crashes on VRM topology unless every LOD
+	// already has a (possibly empty) FMeshDescription.
+	EnsureMeshDescriptionPopulated(sk);
 	sk->PostEditChange();
 #else
 

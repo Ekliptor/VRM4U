@@ -44,6 +44,14 @@ public class VRM4ULoader : ModuleRules
 				"AnimGraphRuntime",
 				"Projects",
 				"VRM4U",
+				// MeshDescription + SkeletalMeshDescription power the workaround for the
+				// UE 5.7 crash in USkeletalMesh::PostLoadRecoverConvertLODModelsToMeshDescription
+				// (Engine/SkeletalMeshLODModel.cpp:1467-1528 assumes FBX-style section ranges
+				// VRM topology violates). EnsureMeshDescriptionPopulated in this module
+				// creates+commits an empty FMeshDescription per LOD before PostEditChange
+				// fires, which short-circuits the recovery at SkeletalMesh.cpp:3675.
+				"MeshDescription",
+				"SkeletalMeshDescription",
 			});
 		PrivateDependencyModuleNames.Add("TimeManagement");
 
