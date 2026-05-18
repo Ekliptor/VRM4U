@@ -9,6 +9,7 @@
 #   Scripts/build_vrm4u_mac.sh                      # just build libassimp.a
 #   Scripts/build_vrm4u_mac.sh --deploy             # also install into UE engine
 #   Scripts/build_vrm4u_mac.sh --deploy --precompile  # also build the dylibs via UBT
+#   Scripts/build_vrm4u_mac.sh --dev                # also ship UHT headers for downstream C++
 #   Scripts/build_vrm4u_mac.sh --force              # wipe assimp build, rebuild
 #   Scripts/build_vrm4u_mac.sh --engine /path/to/UE_5.x  # override engine root
 #
@@ -18,6 +19,8 @@
 # the eight VRM4U module dylibs into Engine/Plugins/Marketplace/VRM4U/
 # Binaries/Mac so blueprint-only projects can load the plugin without the
 # "Engine modules cannot be compiled at runtime" error.
+# --dev additionally ships the UHT-generated headers (Intermediate/Build/.../
+# Inc) for downstream C++ consumers (e.g. Monolith) that #include VRM4U types.
 
 set -euo pipefail
 
@@ -26,14 +29,16 @@ ENGINE_ROOT="/Volumes/MySSD/EpicGames/UE_5.7"
 FORCE=0
 DEPLOY=0
 PRECOMPILE=0
+DEV=0
 
-usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --force)        FORCE=1; shift ;;
     --deploy)       DEPLOY=1; shift ;;
     --precompile)   PRECOMPILE=1; DEPLOY=1; shift ;;
+    --dev)          DEV=1; PRECOMPILE=1; DEPLOY=1; shift ;;
     --engine)       ENGINE_ROOT="${2:?--engine needs a path}"; shift 2 ;;
     --engine=*)     ENGINE_ROOT="${1#*=}"; shift ;;
     --help|-h)      usage; exit 0 ;;
@@ -67,6 +72,7 @@ echo "→ engine root:    $ENGINE_ROOT"
 echo "→ install lib:    $INSTALL_LIB"
 [[ $DEPLOY -eq 1     ]] && echo "→ deploy target:  $DEPLOY_DIR"
 [[ $PRECOMPILE -eq 1 ]] && echo "→ precompile via: $UBT_BUILD_SH"
+[[ $DEV -eq 1        ]] && echo "→ dev headers:    $DEPLOY_DIR/Intermediate/Build/Mac/UnrealEditor/Inc"
 
 # ─── prereqs ─────────────────────────────────────────────────────────────────
 require() {
@@ -87,6 +93,16 @@ if [[ $DEPLOY -eq 1 && ! -d "$ENGINE_ROOT/Engine" ]]; then
 fi
 if [[ $PRECOMPILE -eq 1 && ! -x "$UBT_BUILD_SH" ]]; then
   echo "error: UBT Build.sh not executable at $UBT_BUILD_SH" >&2
+  exit 1
+fi
+
+# VRM4ULoader.Build.cs (Mac path) link-depends on libassimp.a. The script
+# builds it below if missing, but check the include headers ship in the repo
+# so UBT doesn't fall over on a missing #include hours into the link stage.
+ASSIMP_INCLUDE_PROBE="$PROJECT_ROOT/ThirdParty/assimp/include/assimp/Importer.hpp"
+if [[ ! -f "$ASSIMP_INCLUDE_PROBE" ]]; then
+  echo "error: missing third-party header: $ASSIMP_INCLUDE_PROBE" >&2
+  echo "       repo not fully cloned? (assimp headers should ship in-tree)" >&2
   exit 1
 fi
 
@@ -245,6 +261,14 @@ CPP
     --exclude='Binaries/' --exclude='DerivedDataCache/' \
     "$PROJECT_ROOT/" "$PRECOMPILE_HOST/Plugins/VRM4U/"
 
+  # Defensive check — libassimp.a should exist after the build section above,
+  # but a stale dummy.txt or empty .a file from a failed prior run would burn
+  # 5+ min before UBT's linker complains. Catch it here.
+  if [[ ! -f "$INSTALL_LIB" ]] || ! file "$INSTALL_LIB" | grep -q "current ar archive"; then
+    echo "error: $INSTALL_LIB missing or not a valid archive — re-run with --force" >&2
+    exit 1
+  fi
+
   echo "→ invoking UBT (this compiles all 8 VRM4U modules — ~5-10 min)"
   # -waitmutex queues behind any in-flight UBT/UAT instead of failing fast.
   "$UBT_BUILD_SH" HostProjectEditor Mac Development \
@@ -264,10 +288,30 @@ CPP
   ls -1 "$DEPLOY_DIR/Binaries/Mac"
 fi
 
+# ─── dev: ship UHT-generated headers for downstream C++ consumers ───────────
+# UBT writes *.generated.h into the precompile host's Inc/ tree as a side
+# effect of building the editor target. Downstream plugins (e.g. Monolith
+# with bHasVRM4U-gated modules) need them at compile time. The canonical
+# relative path is Intermediate/Build/<Platform>/<TargetSelector>/Inc/
+# <Module>/UHT/*.generated.h — matching what Monolith itself ships.
+if [[ $DEV -eq 1 ]]; then
+  SRC_INC="$PRECOMPILE_HOST/Plugins/VRM4U/Intermediate/Build/Mac/UnrealEditor/Inc"
+  DST_INC="$DEPLOY_DIR/Intermediate/Build/Mac/UnrealEditor/Inc"
+  if [[ ! -d "$SRC_INC" ]]; then
+    echo "error: no Inc/ tree at $SRC_INC — was --precompile actually run?" >&2
+    exit 1
+  fi
+  echo "→ shipping UHT-generated headers to: $DST_INC"
+  mkdir -p "$DST_INC"
+  rsync -a --delete "$SRC_INC/" "$DST_INC/"
+  echo "→ dev headers installed ($(find "$DST_INC" -name '*.generated.h' | wc -l | tr -d ' ') *.generated.h files)"
+fi
+
 cat <<EOF
 
 Done.
   libassimp.a : $INSTALL_LIB
 $( [[ $DEPLOY -eq 1     ]] && echo "  deployed    : $DEPLOY_DIR" )
 $( [[ $PRECOMPILE -eq 1 ]] && echo "  dylibs      : $DEPLOY_DIR/Binaries/Mac" )
+$( [[ $DEV -eq 1        ]] && echo "  dev headers : $DEPLOY_DIR/Intermediate/Build/Mac/UnrealEditor/Inc" )
 EOF
