@@ -186,6 +186,27 @@ public class HostProject : ModuleRules {
     Write-Host "→ copying compiled DLLs into engine Marketplace install"
     New-Item -ItemType Directory -Force -Path "$DeployDir\Binaries\Win64" | Out-Null
     Invoke-Robocopy -From $CompiledBin -To "$DeployDir\Binaries\Win64" -Label 'install-dlls'
+
+    # Mirror import libraries — UBT writes them per-module under
+    # Intermediate\Build\Win64\x64\UnrealEditor\Development\<Module>\
+    # UnrealEditor-<Module>.lib, separate from the .dlls in Binaries\Win64.
+    # Without this, downstream plugins linking against VRM4U (e.g. Monolith's
+    # VRoid Hub provider on MonolithCore) hit LNK1181 "cannot open input file
+    # UnrealEditor-VRM4U.lib" deep in their compile. Mac has no equivalent
+    # step because dylibs are both load- and link-time artifacts in one file.
+    $StagedInter   = Join-Path $StagedVrm4u 'Intermediate\Build\Win64\x64\UnrealEditor\Development'
+    $DeployedInter = Join-Path $DeployDir   'Intermediate\Build\Win64\x64\UnrealEditor\Development'
+    if (Test-Path $StagedInter) {
+        Write-Host "→ copying import libraries into engine Marketplace install"
+        New-Item -ItemType Directory -Force -Path $DeployedInter | Out-Null
+        Invoke-Robocopy -From $StagedInter -To $DeployedInter -Label 'install-libs'
+        $libCount = @(Get-ChildItem $DeployedInter -Recurse -Filter *.lib -ErrorAction SilentlyContinue).Count
+        Write-Host "→ import libs installed ($libCount *.lib files)"
+    }
+    else {
+        Write-Warning "no Intermediate\Build tree at $StagedInter — downstream plugins will fail to link against VRM4U"
+    }
+
     Write-Host "→ precompile done:"
     Get-ChildItem "$DeployDir\Binaries\Win64" -Filter *.dll | ForEach-Object { Write-Host "    $($_.Name)" }
 }
@@ -223,4 +244,5 @@ Write-Host ""
 Write-Host "Done."
 if ($Deploy)     { Write-Host "  deployed    : $DeployDir" }
 if ($Precompile) { Write-Host "  dlls        : $DeployDir\Binaries\Win64" }
+if ($Precompile) { Write-Host "  import libs : $DeployDir\Intermediate\Build\Win64\x64\UnrealEditor\Development" }
 if ($Dev)        { Write-Host "  dev headers : $DstInc" }

@@ -14,7 +14,8 @@
 # Compiled Dynamic libraries
 *.so
 *.dylib
-# *.dll
+*.dll
+*.pdb
 
 # Fortran module files
 *.mod
@@ -24,16 +25,22 @@
 #*.lai
 #*.la
 *.a
-#*.lib
+*.lib
 
 # Executables
 *.exe
 *.out
 *.app
 
+# Unreal Engine build artifacts
+*.modules
+*.precompiled
+
 # Build output
 Intermediate/VRM4UMacBuild/
 Intermediate/VRM4UWinBuild/
+Build/Intermediate/
+Build/Binaries/Win64/
 
 # IDEs
 .idea/
