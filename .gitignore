@@ -39,8 +39,7 @@
 # Build output
 Intermediate/VRM4UMacBuild/
 Intermediate/VRM4UWinBuild/
-Build/Intermediate/
-Build/Binaries/Win64/
+Build/
 
 # IDEs
 .idea/
