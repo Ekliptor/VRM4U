@@ -20,6 +20,16 @@ public class VRM4ULoader : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
+#if UE_5_8_OR_LATER
+		// UE 5.8 (BuildSettingsVersion.V7) promotes -Wunreachable-code-aggressive from Off
+		// to Error on Clang. This module has three deliberate dead-code sites: two
+		// `if (1) { ... } else { ... }` toggles in VrmConvertModel.cpp and an always-break
+		// loop in VrmConvertPose.cpp. Keep them visible as warnings rather than fail the
+		// build. Module scope, not target scope -- an installed engine rejects a target-level
+		// override ("has build products in common with UnrealEditor").
+		CppCompileWarningSettings.UnreachableCodeWarningLevel = WarningLevel.Warning;
+#endif
+
 		// for thirdparty header
 		//bUseUnityBuild = false;
 
